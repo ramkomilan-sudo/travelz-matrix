@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travelz Airline Routing Matrix</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:12px;background:#fff;color:#1a1a1a;padding:16px}
+.header{margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header-left h1{font-size:17px;font-weight:500;color:#1a1a1a;margin-bottom:3px}
+.header-left p{font-size:11px;color:#999}
+.header-right{font-size:11px;color:#999;text-align:right}
+.controls{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+input[type=text]{padding:5px 10px;border-radius:8px;border:0.5px solid #ccc;background:#f7f7f5;color:#1a1a1a;font-size:12px;outline:none;min-width:200px}
+input:focus{border-color:#888}
+select{padding:5px 8px;border-radius:8px;border:0.5px solid #ccc;background:#f7f7f5;color:#1a1a1a;font-size:12px;outline:none;cursor:pointer}
+.fb{padding:3px 10px;border-radius:20px;border:0.5px solid #ccc;background:#f7f7f5;color:#666;font-size:11px;cursor:pointer;white-space:nowrap}
+.fb.on{border-color:transparent;color:#fff}
+.fb[data-f="all"].on{background:#534AB7}
+.fb[data-f="ta"].on{background:#185FA5}
+.fb[data-f="dc"].on{background:#0F6E56}
+.fb[data-f="tp"].on{background:#5F5E5A}
+.fb[data-f="tf"].on{background:#854F0B}
+.fb[data-f="all3"].on{background:#3B6D11}
+.fb[data-f="none"].on{background:#A32D2D}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding:8px 12px;background:#f7f7f5;border-radius:8px;border:0.5px solid #e0e0dc}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:#666}
+.outer{overflow-x:auto;border:0.5px solid #e0e0dc;border-radius:10px;max-height:68vh;overflow-y:auto}
+table{border-collapse:collapse;width:100%;min-width:1150px}
+thead{position:sticky;top:0;z-index:10}
+thead tr th{background:#f7f7f5;padding:5px 7px;font-size:10px;font-weight:500;color:#666;border-bottom:0.5px solid #e0e0dc;white-space:nowrap;text-align:center}
+thead tr:first-child th.al{text-align:left;position:sticky;left:0;z-index:11;background:#f7f7f5;min-width:175px}
+thead tr:nth-child(2) th{background:#f7f7f5;padding:4px 7px;font-size:10px;font-weight:400;color:#999;border-bottom:0.5px solid #e0e0dc}
+thead tr:nth-child(2) th.al2{position:sticky;left:0;z-index:11;background:#f7f7f5;text-align:left}
+.grp{border-left:1px solid #e0e0dc!important}
+tbody td{padding:4px 7px;border-bottom:0.5px solid #f0f0ec;text-align:center;vertical-align:middle;white-space:nowrap}
+tbody td.al{text-align:left;position:sticky;left:0;background:#fff;border-right:0.5px solid #e0e0dc;z-index:2;min-width:175px;font-size:12px}
+tbody td.iata{font-size:10px;color:#bbb;width:32px}
+tbody td.reg{font-size:10px;color:#bbb;width:80px;text-align:left}
+tbody tr:hover td{background:#fafaf8}
+tbody tr:hover td.al{background:#fafaf8}
+.badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:500;white-space:nowrap}
+.b-ta{background:#E6F1FB;color:#0C447C}
+.b-yes{background:#E1F5EE;color:#085041}
+.b-soon{background:#FAEEDA;color:#633806}
+.b-no{background:#FCEBEB;color:#791F1F}
+.b-dash{color:#ddd;font-size:12px}
+.b-dc{background:#E1F5EE;color:#085041;font-size:9px}
+.b-tp{background:#F1EFE8;color:#5F5E5A;font-size:9px}
+.b-ndc{background:#E1F5EE;color:#085041;font-size:9px}
+.b-lcc{background:#EEEDFE;color:#3C3489;font-size:9px}
+.rec-am{background:#E6F1FB;color:#0C447C}
+.rec-dc{background:#E1F5EE;color:#085041}
+.rec-tp{background:#EAF3DE;color:#27500A}
+.rec-tf{background:#FAEEDA;color:#633806}
+.rec-none{background:#FCEBEB;color:#791F1F}
+.rec-multi{background:#EEEDFE;color:#3C3489}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:6px;margin-top:10px}
+.sc{background:#f7f7f5;border-radius:8px;padding:8px 10px}
+.sc .n{font-size:19px;font-weight:500}
+.sc .l{font-size:10px;color:#999;margin-top:1px}
+.tag{display:inline-block;font-size:9px;padding:1px 5px;border-radius:10px;background:#f0f0ec;color:#888;margin-left:4px;font-weight:400}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Travelz — Airline Routing Matrix</h1>
+    <p>All airlines cross-referenced against Ticketing Authority (BSP NO), Duffel API and Travel Fusion supplier pages. For internal use only.</p>
+  </div>
+  <div class="header-right">
+    Last updated: July 2026<br>
+    Travelz AI AS · IATA 6024065
+  </div>
+</div>
+
+<div class="controls">
+  <input type="text" id="srch" placeholder="Search airline or IATA code..." oninput="render()">
+  <select id="reg" onchange="render()">
+    <option value="">All regions</option>
+    <option value="Europe">Europe</option>
+    <option value="Middle East">Middle East</option>
+    <option value="Asia">Asia</option>
+    <option value="North America">North America</option>
+    <option value="Latin America">Latin America</option>
+    <option value="Africa">Africa</option>
+    <option value="Oceania">Oceania</option>
+  </select>
+  <button class="fb on" data-f="all" onclick="flt('all')">All</button>
+  <button class="fb" data-f="ta" onclick="flt('ta')">Has TA</button>
+  <button class="fb" data-f="dc" onclick="flt('dc')">Duffel Direct</button>
+  <button class="fb" data-f="tp" onclick="flt('tp')">Duffel Travelport</button>
+  <button class="fb" data-f="tf" onclick="flt('tf')">Travel Fusion</button>
+  <button class="fb" data-f="all3" onclick="flt('all3')">All 3 vendors</button>
+  <button class="fb" data-f="none" onclick="flt('none')">No vendor</button>
+</div>
+
+<div class="legend">
+  <div class="leg"><span class="badge b-yes">✓</span> Supported</div>
+  <div class="leg"><span class="badge b-soon">soon</span> Coming soon</div>
+  <div class="leg"><span class="badge b-no">✗</span> Not supported</div>
+  <div class="leg"><span class="b-dash">—</span> Not available via this vendor</div>
+  <div class="leg"><span class="badge b-dc">Direct</span> Duffel Direct Connect (NDC/API)</div>
+  <div class="leg"><span class="badge b-tp">Travelport</span> Duffel via Travelport GDS</div>
+  <div class="leg"><span class="badge b-ta">TA</span> Ticketing Authority granted</div>
+</div>
+
+<div class="outer">
+<table id="tbl">
+<thead>
+<tr>
+  <th class="al" rowspan="2">Airline</th>
+  <th rowspan="2">IATA</th>
+  <th rowspan="2" style="text-align:left;width:90px">Region</th>
+  <th class="grp" colspan="1">Amadeus</th>
+  <th class="grp" colspan="6">Duffel</th>
+  <th class="grp" colspan="8">Travel Fusion</th>
+  <th class="grp" colspan="1">Routing</th>
+</tr>
+<tr>
+  <th class="grp">TA</th>
+  <th class="grp">Type</th>
+  <th>Search/Book</th>
+  <th>Refund</th>
+  <th>Changes</th>
+  <th>Seats</th>
+  <th>Bags</th>
+  <th>FFP</th>
+  <th class="grp">Type</th>
+  <th>Cancel</th>
+  <th>Change</th>
+  <th>Seats</th>
+  <th>FFN</th>
+  <th>BSP</th>
+  <th>tfPay</th>
+  <th>Branded</th>
+  <th class="grp">Primary vendor</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+
+<div class="summary" id="sum"></div>
+
+<script>
+const Y=()=>`<span class="badge b-yes">✓</span>`;
+const S=()=>`<span class="badge b-soon">soon</span>`;
+const N=()=>`<span class="badge b-no">✗</span>`;
+const DA=()=>`<span class="b-dash">—</span>`;
+
+function cap(v){
+  if(v==='y') return Y();
+  if(v==='s') return S();
+  if(v==='n') return N();
+  return DA();
+}
+
+const TA=new Set(["AC","VY","PW","AR","LA","OA","HM","SV","TM","GF","PR","LO","SN","NZ","AY","FI","LY","SK","DT","G3","LG","QR","CX","HR","EK","PY","TC","LH","IZ","DX","6I","HY","OS","MD","OM","Q4","5N","DY","S4","W2","SM","A3","HP","9B","WB","NT","C6","XQ","AD","EY","FB","PC","GL","GQ","KM","TS","BT","NX","LM","BR","WF","LX","VN","RC","BJ","QS","PG","OU","DE","SS","XB","BG","CA"]);
+
+const DUF={
+  "A3":{t:'dc',bk:'y',ca:'y',ch:'s',se:'s',bg:'y',ff:'s'},
+  "EI":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AR":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "YW":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AH":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "UU":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "BT":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "BP":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AC":{t:'dc',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'y'},
+  "CA":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "UX":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AF":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'s'},
+  "NX":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "MD_D":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "KM_D":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "MK":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "NZ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PX":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "JU":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "HM":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PF":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TC":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TS":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "NF":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "ZA":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AS":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "NH":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AA":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'s',ff:'y'},
+  "GP":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "OZ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "RC":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "OS":{t:'dc',bk:'y',ca:'y',ch:'s',se:'y',bg:'y',ff:'s'},
+  "AV":{t:'tp',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'s'},
+  "J2":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "S4":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AD":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "UP":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PG":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "BG":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "OB":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "BA":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'y'},
+  "SN":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'y'},
+  "FB":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "BW":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "CX":{t:'tp',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'s'},
+  "KX":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "CI":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "MU":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "CZ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "DE":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'y',ff:'s'},
+  "5C":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "CM":{t:'dc',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'y'},
+  "SS":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "OU":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "OK":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "U2":{t:'dc',bk:'y',ca:'y',ch:'s',se:'y',bg:'y',ff:'s'},
+  "MS":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "LY":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "EK":{t:'dc',bk:'y',ca:'y',ch:'s',se:'s',bg:'y',ff:'y'},
+  "ET":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "EY":{t:'tp',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'s'},
+  "EW":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "EWD":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'y'},
+  "BR":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "FJ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "AY":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "KC":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "FZ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "F9":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "GA":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "G3":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "HU":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "HA":{t:'dc',bk:'y',ca:'s',ch:'s',se:'y',bg:'s',ff:'s'},
+  "HX":{t:'tp',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'s'},
+  "IB":{t:'dc',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'y'},
+  "I2":{t:'dc',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'y'},
+  "FI":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "JL":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "B6":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "JQ":{t:'dc',bk:'y',ca:'y',ch:'s',se:'y',bg:'y',ff:'y'},
+  "KQ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "KL":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'s'},
+  "KE":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "KU":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TM":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "LA":{t:'dc',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "LG":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "LO":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "LH":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'y'},
+  "LX":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'y'},
+  "MH":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "OD":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "OM":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "ME":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "RA":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "DY":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "WY":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PK":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PC":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PR":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PD":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PW":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "QF":{t:'dc',bk:'y',ca:'y',ch:'y',se:'y',bg:'y',ff:'y'},
+  "QR":{t:'tp',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'y'},
+  "AT":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'y',ff:'s'},
+  "RJ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "WB":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "SV":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "3U":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "GQ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "IE":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "SA":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "SK":{t:'dc',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TR":{t:'dc',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "SQ":{t:'dc',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'s'},
+  "NK":{t:'dc',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "XQ":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PY":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "DT":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TP":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'y',ff:'s'},
+  "RO":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TG":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TO":{t:'dc',bk:'y',ca:'s',ch:'s',se:'s',bg:'y',ff:'s'},
+  "TU":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "TK":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "UR":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "PS":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "UA":{t:'dc',bk:'y',ca:'s',ch:'y',se:'y',bg:'y',ff:'y'},
+  "VN":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "VS":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "VA":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "Y4":{t:'dc',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "V7":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "VY":{t:'dc',bk:'y',ca:'s',ch:'s',se:'s',bg:'y',ff:'s'},
+  "WS":{t:'tp',bk:'y',ca:'y',ch:'s',se:'s',bg:'s',ff:'y'},
+  "WM":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "MF":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "GL":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "WF":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+  "ZH":{t:'tp',bk:'y',ca:'s',ch:'s',se:'s',bg:'s',ff:'s'},
+};
+
+const TF={
+  "A3":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'y'},
+  "BT":{tp:'NDC',ca:'n',ch:'n',se:'n',ff:'n',bsp:'n',tfp:'y',br:'n'},
+  "SM":{tp:'NDC',ca:'y',ch:'y',se:'n',ff:'n',bsp:'y',tfp:'y',br:'n'},
+  "AC":{tp:'NDC',ca:'y',ch:'n',se:'y',ff:'y',bsp:'y',tfp:'y',br:'y'},
+  "TX":{tp:'NDC',ca:'n',ch:'n',se:'y',ff:'y',bsp:'n',tfp:'n',br:'n'},
+  "AF":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "JU":{tp:'NDC',ca:'n',ch:'y',se:'y',ff:'n',bsp:'n',tfp:'y',br:'n'},
+  "AS":{tp:'NDC',ca:'n',ch:'n',se:'y',ff:'n',bsp:'n',tfp:'y',br:'y'},
+  "NH":{tp:'NDC',ca:'n',ch:'y',se:'y',ff:'y',bsp:'n',tfp:'y',br:'y'},
+  "AA":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'y'},
+  "OS":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "AV":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'n',tfp:'y',br:'y'},
+  "PG":{tp:'NDC',ca:'n',ch:'y',se:'y',ff:'y',bsp:'n',tfp:'y',br:'n'},
+  "BA":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "SN":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "CX":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'n',tfp:'y',br:'y'},
+  "MU":{tp:'NDC',ca:'y',ch:'y',se:'n',ff:'n',bsp:'n',tfp:'y',br:'n'},
+  "CM":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'y'},
+  "EK":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'n'},
+  "ET":{tp:'NDC',ca:'y',ch:'n',se:'n',ff:'y',bsp:'y',tfp:'y',br:'n'},
+  "EY":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'n'},
+  "AY":{tp:'NDC',ca:'n',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "GF":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'n',bsp:'y',tfp:'n',br:'n'},
+  "HA":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'n'},
+  "IB":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'y'},
+  "KL":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "LA":{tp:'NDC',ca:'n',ch:'y',se:'n',ff:'n',bsp:'n',tfp:'y',br:'n'},
+  "LO":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'n',tfp:'y',br:'n'},
+  "LH":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "NZ":{tp:'NDC',ca:'n',ch:'n',se:'n',ff:'n',bsp:'n',tfp:'n',br:'n'},
+  "OA":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'y'},
+  "WY":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'n',bsp:'n',tfp:'y',br:'n'},
+  "PR":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'n',tfp:'n',br:'n'},
+  "QF":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'n'},
+  "QR":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "RJ":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'n'},
+  "SQ":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "LX":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "TP":{tp:'NDC',ca:'n',ch:'n',se:'y',ff:'n',bsp:'n',tfp:'y',br:'n'},
+  "TK":{tp:'NDC',ca:'y',ch:'y',se:'n',ff:'y',bsp:'y',tfp:'y',br:'n'},
+  "UA":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'y',br:'n'},
+  "VS":{tp:'NDC',ca:'n',ch:'y',se:'y',ff:'y',bsp:'n',tfp:'y',br:'y'},
+  "FI":{tp:'NDC',ca:'n',ch:'y',se:'y',ff:'y',bsp:'y',tfp:'n',br:'y'},
+  "NI":{tp:'NDC',ca:'y',ch:'y',se:'y',ff:'n',bsp:'n',tfp:'y',br:'n'},
+  "AQ":{tp:'LCC',ca:'n',ch:'y',se:'n',ff:'y',bsp:'n',tfp:'y',br:'y'},
+  "AN":{tp:'LCC',ca:'n',ch:'n',se:'n',ff:'n',bsp:'n',tfp:'y',br:'n'},
+};
+
+const airlines=[
+  {n:"9 Air",i:"AQ",r:"Asia"},
+  {n:"Advanced Air",i:"AN",r:"North America"},
+  {n:"Aegean Airlines",i:"A3",r:"Europe"},
+  {n:"Aer Lingus",i:"EI",r:"Europe"},
+  {n:"Aerolíneas Argentinas",i:"AR",r:"Latin America"},
+  {n:"Aeromar",i:"YW",r:"Latin America"},
+  {n:"Air Algérie",i:"AH",r:"Africa"},
+  {n:"Air Austral",i:"UU",r:"Africa"},
+  {n:"airBaltic",i:"BT",r:"Europe"},
+  {n:"Air Botswana",i:"BP",r:"Africa"},
+  {n:"Air Cairo",i:"SM",r:"Middle East"},
+  {n:"Air Canada",i:"AC",r:"North America"},
+  {n:"Air Caraïbes",i:"TX",r:"Latin America",duf_none:true},
+  {n:"Air China",i:"CA",r:"Asia"},
+  {n:"Air Europa",i:"UX",r:"Europe"},
+  {n:"Air France",i:"AF",r:"Europe"},
+  {n:"Air Greenland",i:"GL",r:"Europe"},
+  {n:"Air Macau",i:"NX",r:"Asia"},
+  {n:"Air Madagascar",i:"MD",r:"Africa",duf_code:"MD_D"},
+  {n:"Air Malta",i:"KM",r:"Europe",duf_code:"KM_D"},
+  {n:"Air Mauritius",i:"MK",r:"Africa"},
+  {n:"Air New Zealand",i:"NZ",r:"Oceania"},
+  {n:"Air Niugini",i:"PX",r:"Oceania"},
+  {n:"Air Serbia",i:"JU",r:"Europe"},
+  {n:"Air Seychelles",i:"HM",r:"Africa"},
+  {n:"Air Tahiti Nui",i:"PF",r:"Oceania"},
+  {n:"Air Tanzania",i:"TC",r:"Africa"},
+  {n:"Air Transat",i:"TS",r:"North America"},
+  {n:"Air Vanuatu",i:"NF",r:"Oceania"},
+  {n:"Airlink",i:"ZA",r:"Africa"},
+  {n:"Alaska Airlines",i:"AS",r:"North America"},
+  {n:"All Nippon Airways (ANA)",i:"NH",r:"Asia"},
+  {n:"American Airlines",i:"AA",r:"North America"},
+  {n:"Amapola / PopulAir",i:"HP",r:"Europe",duf_none:true},
+  {n:"APG Airlines",i:"GP",r:"Europe"},
+  {n:"Asiana Airlines",i:"OZ",r:"Asia"},
+  {n:"Atlantic Airways",i:"RC",r:"Europe"},
+  {n:"Austrian Airlines",i:"OS",r:"Europe"},
+  {n:"Avianca",i:"AV",r:"Latin America"},
+  {n:"Azerbaijan Airlines",i:"J2",r:"Middle East"},
+  {n:"Azores Airlines",i:"S4",r:"Europe"},
+  {n:"Azul",i:"AD",r:"Latin America"},
+  {n:"Bahamasair",i:"UP",r:"Latin America"},
+  {n:"Bangkok Airways",i:"PG",r:"Asia"},
+  {n:"Biman Bangladesh Airlines",i:"BG",r:"Asia"},
+  {n:"Binter Canarias",i:"NT",r:"Europe",duf_none:true},
+  {n:"BoA Regional",i:"OB",r:"Latin America"},
+  {n:"British Airways",i:"BA",r:"Europe"},
+  {n:"Brussels Airlines",i:"SN",r:"Europe"},
+  {n:"Bulgaria Air",i:"FB",r:"Europe"},
+  {n:"Caribbean Airlines",i:"BW",r:"Latin America"},
+  {n:"Cathay Pacific",i:"CX",r:"Asia"},
+  {n:"Cayman Airways",i:"KX",r:"Latin America"},
+  {n:"China Airlines",i:"CI",r:"Asia"},
+  {n:"China Eastern",i:"MU",r:"Asia"},
+  {n:"China Southern Airlines",i:"CZ",r:"Asia"},
+  {n:"Condor",i:"DE",r:"Europe"},
+  {n:"Contour Airlines",i:"5C",r:"North America"},
+  {n:"Copa Airlines",i:"CM",r:"Latin America"},
+  {n:"Corsair",i:"SS",r:"Europe"},
+  {n:"Croatia Airlines",i:"OU",r:"Europe"},
+  {n:"Czech Airlines",i:"OK",r:"Europe"},
+  {n:"easyJet",i:"U2",r:"Europe"},
+  {n:"EgyptAir",i:"MS",r:"Middle East"},
+  {n:"El Al",i:"LY",r:"Middle East"},
+  {n:"Emirates",i:"EK",r:"Middle East"},
+  {n:"Ethiopian Airlines",i:"ET",r:"Africa"},
+  {n:"Etihad Airways",i:"EY",r:"Middle East"},
+  {n:"Eurowings",i:"EW",r:"Europe"},
+  {n:"Eurowings Discover",i:"EWD",r:"Europe"},
+  {n:"EVA Airways",i:"BR",r:"Asia"},
+  {n:"Fiji Airways",i:"FJ",r:"Oceania"},
+  {n:"Finnair",i:"AY",r:"Europe"},
+  {n:"FlexFlight",i:"W2",r:"Europe",duf_none:true},
+  {n:"FlyArystan",i:"KC",r:"Asia"},
+  {n:"flydubai",i:"FZ",r:"Middle East"},
+  {n:"Frontier Airlines",i:"F9",r:"North America"},
+  {n:"Garuda Indonesia",i:"GA",r:"Asia"},
+  {n:"GOL",i:"G3",r:"Latin America"},
+  {n:"Gulf Air",i:"GF",r:"Middle East"},
+  {n:"Hahn Air",i:"HR",r:"Europe",duf_none:true},
+  {n:"Hainan Airlines",i:"HU",r:"Asia"},
+  {n:"Hawaiian Airlines",i:"HA",r:"North America"},
+  {n:"Hong Kong Airlines",i:"HX",r:"Asia"},
+  {n:"Iberia",i:"IB",r:"Europe"},
+  {n:"Iberia Express",i:"I2",r:"Europe"},
+  {n:"Icelandair",i:"FI",r:"Europe"},
+  {n:"Japan Airlines",i:"JL",r:"Asia"},
+  {n:"JetBlue",i:"B6",r:"North America"},
+  {n:"Jetstar",i:"JQ",r:"Oceania"},
+  {n:"Kenya Airways",i:"KQ",r:"Africa"},
+  {n:"KLM",i:"KL",r:"Europe"},
+  {n:"KM Malta Airlines",i:"KM",r:"Europe",duf_code:"KM_D"},
+  {n:"Korean Air",i:"KE",r:"Asia"},
+  {n:"Kuwait Airways",i:"KU",r:"Middle East"},
+  {n:"LAM Mozambique",i:"TM",r:"Africa"},
+  {n:"LATAM",i:"LA",r:"Latin America"},
+  {n:"LEVEL",i:"LV",r:"Europe",duf_none:true},
+  {n:"Loganair",i:"LM",r:"Europe",duf_none:true},
+  {n:"LOT Polish Airlines",i:"LO",r:"Europe"},
+  {n:"Lufthansa",i:"LH",r:"Europe"},
+  {n:"Luxair",i:"LG",r:"Europe"},
+  {n:"Madagascar Airlines",i:"MD",r:"Africa",duf_code:"MD_D"},
+  {n:"Malaysia Airlines",i:"MH",r:"Asia"},
+  {n:"Malindo Air",i:"OD",r:"Asia"},
+  {n:"MIAT Mongolian Airlines",i:"OM",r:"Asia"},
+  {n:"Middle East Airlines",i:"ME",r:"Middle East"},
+  {n:"Nepal Airlines",i:"RA",r:"Asia"},
+  {n:"Nile Air",i:"NI",r:"Middle East"},
+  {n:"NouvelAir Tunisie",i:"BJ",r:"Africa",duf_none:true},
+  {n:"Norwegian",i:"DY",r:"Europe"},
+  {n:"Olympic Air",i:"OA",r:"Europe",duf_none:true,tf_code:"OA"},
+  {n:"Oman Air",i:"WY",r:"Middle East"},
+  {n:"Pakistan International Airlines",i:"PK",r:"Asia"},
+  {n:"Pegasus",i:"PC",r:"Europe"},
+  {n:"Philippine Airlines",i:"PR",r:"Asia"},
+  {n:"Porter Airlines",i:"PD",r:"North America"},
+  {n:"Precision Air",i:"PW",r:"Africa"},
+  {n:"Qantas",i:"QF",r:"Oceania"},
+  {n:"Qatar Airways",i:"QR",r:"Middle East"},
+  {n:"Royal Air Maroc",i:"AT",r:"Africa"},
+  {n:"Royal Jordanian",i:"RJ",r:"Middle East"},
+  {n:"RwandAir",i:"WB",r:"Africa"},
+  {n:"Saudia",i:"SV",r:"Middle East"},
+  {n:"SAS",i:"SK",r:"Europe"},
+  {n:"Scoot",i:"TR",r:"Asia"},
+  {n:"Shenzhen Airlines",i:"ZH",r:"Asia"},
+  {n:"Sichuan Airlines",i:"3U",r:"Asia"},
+  {n:"Singapore Airlines",i:"SQ",r:"Asia"},
+  {n:"SKY express",i:"GQ",r:"Europe"},
+  {n:"Smartavia",i:"5N",r:"Europe",duf_none:true},
+  {n:"Smartwings",i:"QS",r:"Europe",duf_none:true},
+  {n:"Solomon Airlines",i:"IE",r:"Oceania"},
+  {n:"South African Airways",i:"SA",r:"Africa"},
+  {n:"SunExpress",i:"XQ",r:"Europe"},
+  {n:"Surinam Airways",i:"PY",r:"Latin America"},
+  {n:"Swiss",i:"LX",r:"Europe"},
+  {n:"TAAG Angola",i:"DT",r:"Africa"},
+  {n:"TAP Air Portugal",i:"TP",r:"Europe"},
+  {n:"Tarom",i:"RO",r:"Europe"},
+  {n:"Thai Airways",i:"TG",r:"Asia"},
+  {n:"Transavia",i:"TO",r:"Europe"},
+  {n:"Tunisair",i:"TU",r:"Africa"},
+  {n:"Turkish Airlines",i:"TK",r:"Middle East"},
+  {n:"Uganda Airlines",i:"UR",r:"Africa"},
+  {n:"Ukraine International Airlines",i:"PS",r:"Europe"},
+  {n:"United Airlines",i:"UA",r:"North America"},
+  {n:"Uzbekistan Airways",i:"HY",r:"Asia",duf_none:true},
+  {n:"Vietnam Airlines",i:"VN",r:"Asia"},
+  {n:"Virgin Atlantic",i:"VS",r:"Europe"},
+  {n:"Virgin Australia",i:"VA",r:"Oceania"},
+  {n:"Volaris",i:"Y4",r:"Latin America"},
+  {n:"Volotea",i:"V7",r:"Europe"},
+  {n:"Vueling",i:"VY",r:"Europe"},
+  {n:"WestJet",i:"WS",r:"North America"},
+  {n:"Widerøe",i:"WF",r:"Europe"},
+  {n:"Winair",i:"WM",r:"Latin America"},
+  {n:"XiamenAir",i:"MF",r:"Asia"},
+];
+
+const seen=new Set();
+const uniq=airlines.filter(a=>{
+  if(seen.has(a.i)) return false;
+  seen.add(a.i);
+  return true;
+}).sort((a,b)=>a.n.localeCompare(b.n));
+
+function getDuf(al){
+  if(al.duf_none) return null;
+  return DUF[al.duf_code||al.i]||null;
+}
+function getTF(al){
+  return TF[al.tf_code||al.i]||null;
+}
+
+function recBadge(d,t,hasTA){
+  const isDC=d&&d.t==='dc';
+  const isTP=d&&d.t==='tp';
+  if(hasTA&&isDC) return`<span class="badge rec-multi">Amadeus + Duffel DC</span>`;
+  if(hasTA) return`<span class="badge rec-am">Amadeus</span>`;
+  if(isDC) return`<span class="badge rec-dc">Duffel Direct</span>`;
+  if(isTP&&t) return`<span class="badge rec-tp">Duffel TP + TF</span>`;
+  if(isTP) return`<span class="badge rec-tp">Duffel Travelport</span>`;
+  if(t) return`<span class="badge rec-tf">Travel Fusion</span>`;
+  return`<span class="badge rec-none">No vendor</span>`;
+}
+
+let curF='all';
+function flt(f){
+  curF=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  render();
+}
+
+function render(){
+  const q=document.getElementById('srch').value.toLowerCase();
+  const reg=document.getElementById('reg').value;
+  const tb=document.getElementById('tbody');
+  tb.innerHTML='';
+  let cnt={total:0,ta:0,dc:0,tp:0,tf:0,all3:0,none:0};
+
+  uniq.forEach(al=>{
+    const hasTA=TA.has(al.i);
+    const d=getDuf(al);
+    const t=getTF(al);
+    const isDC=d&&d.t==='dc';
+    const isTP=d&&d.t==='tp';
+    const hasTF=!!t;
+
+    if(q&&!al.n.toLowerCase().includes(q)&&!al.i.toLowerCase().includes(q)) return;
+    if(reg&&al.r!==reg) return;
+    if(curF==='ta'&&!hasTA) return;
+    if(curF==='dc'&&!isDC) return;
+    if(curF==='tp'&&!isTP) return;
+    if(curF==='tf'&&!hasTF) return;
+    if(curF==='all3'&&(!hasTA||!d||!hasTF)) return;
+    if(curF==='none'&&(hasTA||d||hasTF)) return;
+
+    cnt.total++;
+    if(hasTA) cnt.ta++;
+    if(isDC) cnt.dc++;
+    if(isTP) cnt.tp++;
+    if(hasTF) cnt.tf++;
+    if(hasTA&&d&&hasTF) cnt.all3++;
+    if(!hasTA&&!d&&!hasTF) cnt.none++;
+
+    const dType=d?(d.t==='dc'?`<span class="badge b-dc">Direct</span>`:`<span class="badge b-tp">Travelport</span>`):DA();
+    const tfType=t?(t.tp==='LCC'?`<span class="badge b-lcc">LCC</span>`:`<span class="badge b-ndc">NDC</span>`):DA();
+
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="al">${al.n}</td>
+      <td class="iata">${al.i.replace('EWD','EW*')}</td>
+      <td class="reg">${al.r}</td>
+      <td class="grp">${hasTA?`<span class="badge b-ta">TA</span>`:N()}</td>
+      <td class="grp">${dType}</td>
+      <td>${d?Y():DA()}</td>
+      <td>${d?cap(d.ca):DA()}</td>
+      <td>${d?cap(d.ch):DA()}</td>
+      <td>${d?cap(d.se):DA()}</td>
+      <td>${d?cap(d.bg):DA()}</td>
+      <td>${d?cap(d.ff):DA()}</td>
+      <td class="grp">${tfType}</td>
+      <td>${t?cap(t.ca):DA()}</td>
+      <td>${t?cap(t.ch):DA()}</td>
+      <td>${t?cap(t.se):DA()}</td>
+      <td>${t?cap(t.ff):DA()}</td>
+      <td>${t?cap(t.bsp):DA()}</td>
+      <td>${t?cap(t.tfp):DA()}</td>
+      <td>${t?cap(t.br):DA()}</td>
+      <td class="grp">${recBadge(d,t,hasTA)}</td>`;
+    tb.appendChild(tr);
+  });
+
+  document.getElementById('sum').innerHTML=`
+    <div class="sc"><div class="n">${cnt.total}</div><div class="l">Airlines shown</div></div>
+    <div class="sc"><div class="n" style="color:#0C447C">${cnt.ta}</div><div class="l">Ticketing Authority</div></div>
+    <div class="sc"><div class="n" style="color:#085041">${cnt.dc}</div><div class="l">Duffel Direct</div></div>
+    <div class="sc"><div class="n" style="color:#5F5E5A">${cnt.tp}</div><div class="l">Duffel Travelport</div></div>
+    <div class="sc"><div class="n" style="color:#854F0B">${cnt.tf}</div><div class="l">Travel Fusion</div></div>
+    <div class="sc"><div class="n" style="color:#3B6D11">${cnt.all3}</div><div class="l">All 3 vendors</div></div>
+    <div class="sc"><div class="n" style="color:#A32D2D">${cnt.none}</div><div class="l">No vendor</div></div>`;
+}
+render();
+</script>
+</body>
+</html>
